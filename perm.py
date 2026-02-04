@@ -122,27 +122,27 @@ def anova():
 
     _, p_values_greatest, obs_diff_greatest = minmax_perm(
         session,
-        ["Page 1", "Page 2", "Page 3", "Page 4"],
+        ["Page 2"],
         "Page",
         "Time",
         "greater",
         n_sample,
     )
 
-    st.dataframe(p_values_greatest)
+    st.dataframe(obs_diff_greatest)
     st.write(
         f"Observed difference {obs_diff_greatest['Page 2']:.4f} (or more) probable in {(p_values_greatest['Page 2']):.4f} trials out of {n_sample} trial"
     )
     _, p_values_lowest, obs_diff_lowest = minmax_perm(
         session,
-        ["Page 1", "Page 2", "Page 3", "Page 4"],
+        ["Page 4"],
         "Page",
         "Time",
         "lesser",
         n_sample,
     )
 
-    st.dataframe(p_values_lowest)
+    st.dataframe(obs_diff_lowest)
     st.write(
         f"Observed difference {obs_diff_lowest['Page 4']:.4f} (or less) probable in {(p_values_lowest['Page 4']):.4f} trials out of {n_sample} trial"
     )
