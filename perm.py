@@ -6,6 +6,7 @@ import numpy as np
 import random
 
 import scipy.stats as stats
+from minmax_perm import minmax_perm
 
 
 def perm_diff(s, nA, nB):
@@ -51,14 +52,12 @@ def conversion_rate():
     st.write(
         f"Observed difference {obs_diff} (or more) probable in {np.mean(np.array(diffs) > obs_diff):.4f} trials out of 1000 trial"
     )
-
-    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=diffs)))
+    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=diffs)), x="diff")
     fig.axvline(obs_diff, ls="--", c="r")
-    st.write(fig, x="diff")
     st.pyplot()
 
 
-@st.cache
+@st.cache_data
 def run_simulation(balls):
     perms_diff = []
     my_bar = st.progress(0)
@@ -106,16 +105,46 @@ def anova():
     st.dataframe(session.groupby("Page").var())
 
     obs_var = session.groupby("Page").mean().var()[0]
-
+    st.write(f"observed variance: {obs_var:.4f}")
     n_sample = st.slider("Number of samples", 1000, 10_000, value=1000)
     perm_vars = [perm_var(session) for _ in range(n_sample)]
-    # obs_var = session.groupby('Page').var().values
-    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=perm_vars)))
-    st.write(fig, x="diff")
+    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=perm_vars)), x="diff")
+    st.write(fig)
     st.pyplot()
 
     st.write(
         f"Pr(Prob) {np.mean([var > obs_var for var in perm_vars]):.4f}... difference in variance {obs_var:.2f} ..."
+    )
+
+    st.write(
+        "Now let's try to quantify whether Page 2 has the highest time and Page 4 has the lowest time"
+    )
+
+    _, p_values_greatest, obs_diff_greatest = minmax_perm(
+        session,
+        ["Page 1", "Page 2", "Page 3", "Page 4"],
+        "Page",
+        "Time",
+        "greater",
+        n_sample,
+    )
+
+    st.dataframe(p_values_greatest)
+    st.write(
+        f"Observed difference {obs_diff_greatest['Page 2']:.4f} (or more) probable in {(p_values_greatest['Page 2']):.4f} trials out of {n_sample} trial"
+    )
+    _, p_values_lowest, obs_diff_lowest = minmax_perm(
+        session,
+        ["Page 1", "Page 2", "Page 3", "Page 4"],
+        "Page",
+        "Time",
+        "lesser",
+        n_sample,
+    )
+
+    st.dataframe(p_values_lowest)
+    st.write(
+        f"Observed difference {obs_diff_lowest['Page 4']:.4f} (or less) probable in {(p_values_lowest['Page 4']):.4f} trials out of {n_sample} trial"
     )
 
 
@@ -149,7 +178,7 @@ def web_session_experiment():
     st.write(
         f"Observed difference {true_diff:.4f} (or more) probable in {np.mean(np.array(perm_diffs) > true_diff):.4f} trials out of 1000 trial"
     )
-    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=perm_diffs)))
+    fig = sns.histplot(data=pd.DataFrame.from_dict(dict(diff=perm_diffs)), x="diff")
     fig.axvline(true_diff, ls="--", c="r")
     st.write(fig)
     st.pyplot()
